@@ -67,7 +67,7 @@ else {
 // });
 
 app.post("/new", (req, res) => {
-  if (find.users(req.session[id])) {
+  if (req.session["id"] === users.id) {
   var shortURL = generateRandomString();
   urlDatabase[shortURL] = {username: req.session["username"], url: req.body.longURL};
   res.redirect("/urls");

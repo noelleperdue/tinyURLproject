@@ -1,5 +1,6 @@
 var express = require('express');
 var app = express();
+var _ = require('lodash');
 const bcrypt = require('bcrypt');
 app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
@@ -13,6 +14,7 @@ var session = require('express-session')
 app.use(session({ secret: "secret"} ));
 var flash = require('req-flash');
 app.use(flash())
+
 
 const users = [];
 
@@ -32,7 +34,8 @@ function generateRandomString() {
 const urlDatabase = {
   "b2xVn2": {
     username: "test123",
-    url: "http://www.lighthouselabs.ca"
+    url: "http://www.lighthouselabs.ca",
+    counter: 0
   }
 
 };
@@ -48,14 +51,13 @@ app.get("/", (req, res) => {
 });
 
 app.get("/new", (req, res) => {
-  if (req.session["id"] === users.id) {
+  if (_.findIndex(users, ["id", req.session.id]) > -1) {
     console.log(users)
        console.log(req.session["id"]);
     console.log(users.id);
   res.render("urls_new")
 }
 else {
-  console.log("unauthenticated user, redirected to login")
   res.redirect("/login")
 }
 })
@@ -67,12 +69,14 @@ else {
 // });
 
 app.post("/new", (req, res) => {
-  if (req.session["id"] === users.id) {
+  if (_.findIndex(users, ["id", req.session.id]) > -1) {
+  res.statusCode = 200;
   var shortURL = generateRandomString();
-  urlDatabase[shortURL] = {username: req.session["username"], url: req.body.longURL};
+  urlDatabase[shortURL] = {username: req.session["username"], url: req.body.longURL, counter: 0 };
   res.redirect("/urls");
 }
 else {
+  res.statusCode = 401;
   res.redirect("/login")
 }
 });
@@ -80,36 +84,46 @@ else {
 //
 
 app.get("/u/:shortURL", (req, res) => {
+   if (urlDatabase[req.params.shortURL] === undefined) {
+    res.statusCode = 401;
+    res.redirect("/urls")
+  // if (err == "TypeError: Cannot read property 'url' of undefined") {
+  //    res.sendStatus(401);
+  //    alert("401 error");
+  } else {
+  res.statusCode = 200;
+  urlDatabase[req.params.shortURL].counter += 1;
   console.log(JSON.stringify(urlDatabase));
   let longURL = urlDatabase[req.params.shortURL].url;
-   console.log(JSON.stringify(req.params.shortURL));
+   // console.log(JSON.stringify(req.params.shortURL));
+   // console.log(req.params);
   res.redirect(longURL);
+};
 });
 
 app.get('/urls/:id/edit', (req, res) => {
-    res.render('urls_edit');
+console.log(req.params.id);
+  let templateVars = { shorturl: req.params.id, longurl: urlDatabase[req.params.id].url };
+    res.render('urls_edit', templateVars);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  {
-  if (req.session["id"] === users.id) {
+  if (_.findIndex(users, ["id", req.session.id]) > -1) {
   console.log(req.params.id);
-  console.log("hit");
   delete urlDatabase[req.params.id];
   console.log("hit2")
   res.redirect("/urls");
 } else {
   res.redirect("/login")
-}
 };
 });
 
 app.post("/urls/:id/edit", (req, res) => {
-  if (req.session["id"] === users.id) {
+  if (_.findIndex(users, ["id", req.session.id]) > -1) {
   var shortURL = req.params.id;
   urlDatabase[shortURL] = { username: req.session["username"], url: req.body.longURL };
   res.redirect("/urls");
-} else if (req.session["username"] != urlDatabase.username) {
+} else {
   res.redirect("/login")
 }
 });

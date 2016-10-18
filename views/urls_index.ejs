@@ -7,9 +7,10 @@
 <ul>
    <% for (var i in urls) {
         var longUrl = urls[i].url;
+        var count = urls[i].counter;
     %>
     <form method="POST" action="/urls/<%=i%>/delete">
-      <li><%= i %> - <%= longUrl %>
+      <a href="/u/<%=i%>"> <li><%= i %> - <%= longUrl %> - <%= count %> </li> </a>
       <button name = "delete" type = "submit" > DELETE </button>
       <a href="/urls/<%=i%>/edit">Edit</a>
     <% }; %>
